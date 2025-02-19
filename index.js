@@ -34,36 +34,12 @@ const users = {}; // Store connected users
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
 
-  // socket.on("toggle-video", (data) => {
-  //   socket.broadcast.emit("toggle-video", data);
-  // });
-
-  // socket.on("toggle-audio", (data) => {
-  //   socket.broadcast.emit("toggle-audio", data);
-  // });
-
-  // socket.on("screen-share", (data) => {
-  //   socket.broadcast.emit("screen-share", data);
-  // });
-
-  // socket.on("hang-up", (data) => {
-  //   socket.broadcast.emit("hang-up", data);
-  // });
-
-  // socket.on("offer", (data) => {
-  //   socket.broadcast.emit("offer", data);
-  // });
-
-  // socket.on("answer", (data) => {
-  //   socket.broadcast.emit("answer", data);
-  // });
-
-  // socket.on("ice-candidate", (data) => {
-  //   socket.broadcast.emit("ice-candidate", data);
-  // });
-
-  console.log(`User connected: ${socket.id}`);
-
+  /**
+   * @param {string} roomId
+   * Join the meeting room
+   * sent message if room is full
+   * sent event to other user when second user join
+   */
   socket.on("join-meeting-room", (roomId) => {
     // Get all users in the room (excluding the sender)
     const usersInRoom = [...(io.sockets.adapter.rooms.get(roomId) || [])];
@@ -84,14 +60,27 @@ io.on("connection", (socket) => {
     });
   });
 
+  /**
+   * @param {string} targetUserId second user
+   * @param {string} offer first user offer for second user
+   * firstly joined user sent [offer] to [targetUserId]
+   */
   socket.on("offer", ({ targetUserId, offer }) => {
-    io.to(targetUserId).emit("offer", { from: socket.id, offer });
+    io.to(targetUserId).emit("offer", { localUserId: socket.id, offer });
   });
 
+  /**
+   * @param {string} targetUserId first user
+   * @param {string} answer second user answer for first user offer
+   * secondly joined user sent [answer] to [targetUserId]
+   */
   socket.on("answer", ({ targetUserId, answer }) => {
-    io.to(targetUserId).emit("answer", { from: socket.id, answer });
+    io.to(targetUserId).emit("answer", { localUserId: socket.id, answer });
   });
 
+  /** 
+   * both user sharing [ice-candidate]
+  */
   socket.on("ice-candidate", ({ targetUserId, candidate }) => {
     io.to(targetUserId).emit("ice-candidate", { from: socket.id, candidate });
   });
@@ -103,16 +92,19 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("toggle-video", ({ targetUserId, enabled }) => {
-    io.to(targetUserId).emit("toggle-video", enabled);
+  socket.on("toggle-video", ({ roomId, enabled }) => {
+    socket.broadcast.to(roomId).emit("toggle-video", enabled);
+    // io.to(targetUserId).emit("toggle-video", enabled);
   });
 
-  socket.on("toggle-audio", ({ targetUserId, enabled }) => {
-    io.to(targetUserId).emit("toggle-audio", enabled);
+  socket.on("toggle-audio", ({ roomId, enabled }) => {
+    socket.broadcast.to(roomId).emit("toggle-audio", enabled);
+    // io.to(targetUserId).emit("toggle-audio", enabled);
   });
 
-  socket.on("screen-share", ({ targetUserId, enabled }) => {
-    io.to(targetUserId).emit("screen-share", enabled);
+  socket.on("screen-share", ({ roomId, enabled }) => {
+    socket.broadcast.to(roomId).emit("screen-share", enabled);
+    // io.to(targetUserId).emit("screen-share", enabled);
   });
 
   // =================
