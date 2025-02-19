@@ -81,7 +81,7 @@ io.on("connection", (socket) => {
      * both user sharing [ice-candidate]
      */
     socket.on("ice-candidate", ({ targetUserId, candidate }) => {
-      io.to(targetUserId).emit("ice-candidate", { from: socket.id, candidate });
+      io.to(targetUserId).emit("ice-candidate", { candidate });
     });
 
     socket.on("disconnecting", () => {
@@ -102,8 +102,8 @@ io.on("connection", (socket) => {
     });
 
     // send notification to other user about screen share
-    socket.on("screen-share", ({ streamId, isSharing }) => {
-      socket.broadcast.to(roomId).emit("screen-share", { streamId, isSharing });
+    socket.on("screen-share", ({ isSharing }) => {
+      socket.broadcast.to(roomId).emit("screen-share", { isSharing });
     });
   });
 
