@@ -8,14 +8,22 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "https://bokbok-chi.vercel.app", "https://alap2.vercel.app"],
+    origin: [
+      "http://localhost:5173",
+      "https://bokbok-chi.vercel.app",
+      "https://alap2.vercel.app",
+    ],
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://bokbok-chi.vercel.app", "https://alap2.vercel.app"],
+    origin: [
+      "http://localhost:5173",
+      "https://bokbok-chi.vercel.app",
+      "https://alap2.vercel.app",
+    ],
     methods: ["GET", "POST"],
     credentials: true,
   })
@@ -26,33 +34,80 @@ const users = {}; // Store connected users
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
 
-  socket.on("toggle-video", (data) => {
-    socket.broadcast.emit("toggle-video", data);
+  // socket.on("toggle-video", (data) => {
+  //   socket.broadcast.emit("toggle-video", data);
+  // });
+
+  // socket.on("toggle-audio", (data) => {
+  //   socket.broadcast.emit("toggle-audio", data);
+  // });
+
+  // socket.on("screen-share", (data) => {
+  //   socket.broadcast.emit("screen-share", data);
+  // });
+
+  // socket.on("hang-up", (data) => {
+  //   socket.broadcast.emit("hang-up", data);
+  // });
+
+  // socket.on("offer", (data) => {
+  //   socket.broadcast.emit("offer", data);
+  // });
+
+  // socket.on("answer", (data) => {
+  //   socket.broadcast.emit("answer", data);
+  // });
+
+  // socket.on("ice-candidate", (data) => {
+  //   socket.broadcast.emit("ice-candidate", data);
+  // });
+
+  console.log(`User connected: ${socket.id}`);
+
+  socket.on("join-meeting-room", (roomId) => {
+    socket.join(roomId);
+
+    // Get all users in the room (excluding the sender)
+    const usersInRoom = [
+      ...(io.sockets.adapter.rooms.get(roomId) || []),
+    ].filter((id) => id !== socket.id);
+
+    // Send updated user list to everyone in the room
+    io.to(roomId).emit("user-list", usersInRoom);
   });
 
-  socket.on("toggle-audio", (data) => {
-    socket.broadcast.emit("toggle-audio", data);
+  socket.on("call-user", ({ targetUserId, offer }) => {
+    io.to(targetUserId).emit("incoming-call", { from: socket.id, offer });
   });
 
-  socket.on("screen-share", (data) => {
-    socket.broadcast.emit("screen-share", data);
+  socket.on("answer-call", ({ targetUserId, answer }) => {
+    io.to(targetUserId).emit("call-accepted", { answer });
   });
 
-  socket.on("hang-up", (data) => {
-    socket.broadcast.emit("hang-up", data);
+  socket.on("ice-candidate", ({ targetUserId, candidate }) => {
+    io.to(targetUserId).emit("ice-candidate", candidate);
   });
 
-  socket.on("offer", (data) => {
-    socket.broadcast.emit("offer", data);
+  socket.on("disconnecting", () => {
+    // Notify others in the rooms this socket was part of
+    socket.rooms.forEach((roomId) => {
+      socket.to(roomId).emit("user-disconnected", socket.id);
+    });
   });
 
-  socket.on("answer", (data) => {
-    socket.broadcast.emit("answer", data);
+  socket.on("toggle-video", ({ targetUserId, enabled }) => {
+    io.to(targetUserId).emit("toggle-video", enabled);
   });
 
-  socket.on("ice-candidate", (data) => {
-    socket.broadcast.emit("ice-candidate", data);
+  socket.on("toggle-audio", ({ targetUserId, enabled }) => {
+    io.to(targetUserId).emit("toggle-audio", enabled);
   });
+
+  socket.on("screen-share", ({ targetUserId, enabled }) => {
+    io.to(targetUserId).emit("screen-share", enabled);
+  });
+
+  // =================
 
   // group call
   socket.on("join-room", (roomId) => {
@@ -78,7 +133,9 @@ io.on("connection", (socket) => {
     });
 
     socket.on("room:user-screen-share", (screenTrackId, isSharing) => {
-      socket.broadcast.to(roomId).emit("room:user-screen-share", screenTrackId, isSharing);
+      socket.broadcast
+        .to(roomId)
+        .emit("room:user-screen-share", screenTrackId, isSharing);
     });
 
     socket.on("room:user-hang-up", (peerId) => {
