@@ -58,7 +58,7 @@ io.on("connection", (socket) => {
         io.to(peerId).emit("user-joined", socket.id);
       }
     });
-    
+
     /**
      * @param {string} targetUserId second user
      * @param {string} offer first user offer for second user
@@ -67,7 +67,7 @@ io.on("connection", (socket) => {
     socket.on("offer", ({ targetUserId, offer }) => {
       io.to(targetUserId).emit("offer", { localUserId: socket.id, offer });
     });
-  
+
     /**
      * @param {string} targetUserId first user
      * @param {string} answer second user answer for first user offer
@@ -76,37 +76,36 @@ io.on("connection", (socket) => {
     socket.on("answer", ({ targetUserId, answer }) => {
       io.to(targetUserId).emit("answer", { localUserId: socket.id, answer });
     });
-  
-    /** 
+
+    /**
      * both user sharing [ice-candidate]
-    */
+     */
     socket.on("ice-candidate", ({ targetUserId, candidate }) => {
       io.to(targetUserId).emit("ice-candidate", { from: socket.id, candidate });
     });
-  
+
     socket.on("disconnecting", () => {
       // Notify others in the rooms this socket was part of
       socket.rooms.forEach((roomId) => {
         socket.to(roomId).emit("user-disconnected", socket.id);
       });
     });
-  
+
     // send notification to other user about video toggle
     socket.on("toggle-video", ({ enabled }) => {
       socket.broadcast.to(roomId).emit("toggle-video", enabled);
     });
-  
+
     // send notification to other user about audio toggle
     socket.on("toggle-audio", ({ enabled }) => {
       socket.broadcast.to(roomId).emit("toggle-audio", enabled);
     });
-  
+
     // send notification to other user about screen share
-    socket.on("screen-share", ({ enabled }) => {
-      socket.broadcast.to(roomId).emit("screen-share", enabled);
+    socket.on("screen-share", ({ streamId, isSharing }) => {
+      socket.broadcast.to(roomId).emit("screen-share", { streamId, isSharing });
     });
   });
-
 
   // =================
 
