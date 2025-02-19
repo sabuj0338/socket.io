@@ -66,14 +66,14 @@ io.on("connection", (socket) => {
 
   socket.on("join-meeting-room", (roomId) => {
     // Get all users in the room (excluding the sender)
-    const usersInRoom = [...io.sockets.adapter.rooms.get(roomId) || []];
+    const usersInRoom = [...(io.sockets.adapter.rooms.get(roomId) || [])];
 
     if (usersInRoom.length >= 2) {
       // If the room already has 2 users, deny entry
       socket.emit("room-full", roomId);
       return;
     }
-    
+
     socket.join(roomId);
 
     // Notify other users in the room
@@ -84,16 +84,16 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("call-user", ({ targetUserId, offer }) => {
-    io.to(targetUserId).emit("incoming-call", { from: socket.id, offer });
+  socket.on("offer", ({ targetUserId, offer }) => {
+    io.to(targetUserId).emit("offer", { from: socket.id, offer });
   });
 
-  socket.on("answer-call", ({ targetUserId, answer }) => {
-    io.to(targetUserId).emit("call-accepted", { answer });
+  socket.on("answer", ({ targetUserId, answer }) => {
+    io.to(targetUserId).emit("answer", { from: socket.id, answer });
   });
 
   socket.on("ice-candidate", ({ targetUserId, candidate }) => {
-    io.to(targetUserId).emit("ice-candidate", candidate);
+    io.to(targetUserId).emit("ice-candidate", { from: socket.id, candidate });
   });
 
   socket.on("disconnecting", () => {
