@@ -84,10 +84,6 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("user-joined", (peerId) => {
-    socket.broadcast.to(roomId).emit("user-joined", peerId);
-  });
-
   socket.on("call-user", ({ targetUserId, offer }) => {
     io.to(targetUserId).emit("incoming-call", { from: socket.id, offer });
   });
