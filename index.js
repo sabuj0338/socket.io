@@ -65,16 +65,17 @@ io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
 
   socket.on("join-meeting-room", (roomId) => {
+    const room = io.sockets.adapter.rooms.get(roomId);
+    const numUsers = room ? room.size : 0; // Get number of users in the room
+
+    if (numUsers >= 2) {
+      // If the room already has 2 users, deny entry
+      socket.emit("room-full", roomId);
+      return;
+    }
+    
     socket.join(roomId);
-
-    // Get all users in the room (excluding the sender)
-    const usersInRoom = [
-      ...(io.sockets.adapter.rooms.get(roomId) || []),
-    ].filter((id) => id !== socket.id);
-
-    // Send updated user list to everyone in the room
-    io.to(roomId).emit("user-list", usersInRoom);
-    io.to(roomId).emit("user-joined", socket.id);
+    socket.broadcast.to(roomId).emit("user-joined", socket.id);
   });
 
   socket.on("call-user", ({ targetUserId, offer }) => {
