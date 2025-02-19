@@ -74,6 +74,7 @@ io.on("connection", (socket) => {
 
     // Send updated user list to everyone in the room
     io.to(roomId).emit("user-list", usersInRoom);
+    io.to(roomId).emit("user-joined", socket.id);
   });
 
   socket.on("call-user", ({ targetUserId, offer }) => {
